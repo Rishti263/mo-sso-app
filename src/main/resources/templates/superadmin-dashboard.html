@@ -1,319 +1,64 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Super Admin Dashboard</title>
+
+    <!-- CSRF (Spring Security) -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-        }
-
-        .navbar {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .navbar h1 {
-            font-size: 24px;
-        }
-
-        .navbar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .btn-logout {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-logout:hover {
-            background: white;
-            color: #ff6b6b;
-        }
-
-        .container {
-            padding: 40px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card h3 {
-            color: #6c757d;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .stat-card .number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .actions {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-sso {
-            background: #4ecdc4;
-            color: white;
-        }
-
-        .btn-sso:hover {
-            background: #3db8b0;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 20px 30px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: white;
-        }
-
-        .card-header h2 {
-            font-size: 20px;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
-        }
-
-        tr:hover {
-            background: #f8f9ff;
-        }
-
-        .role-badge {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .role-badge.superadmin {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        .role-badge.admin {
-            background: #667eea;
-            color: white;
-        }
-
-        .role-badge.enduser {
-            background: #4ecdc4;
-            color: white;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            margin-right: 5px;
-        }
-
-        .btn-edit {
-            background: #ffa502;
-            color: white;
-        }
-
-        .btn-edit:hover {
-            background: #ff8800;
-        }
-
-        .btn-delete {
-            background: #ff6348;
-            color: white;
-        }
-
-        .btn-delete:hover {
-            background: #ff3838;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 500px;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-        }
-
-        .modal-header h3 {
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        .btn-cancel {
-            background: #95a5a6;
-            color: white;
-        }
-
-        .btn-cancel:hover {
-            background: #7f8c8d;
-        }
-
-        .btn-save {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-save:hover {
-            background: #5568d3;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f5f7fa; }
+        .navbar { background:linear-gradient(135deg,#c0392b,#e74c3c); color:#fff; padding:18px 32px; display:flex; justify-content:space-between; align-items:center; }
+        .navbar h1 { font-size:20px; font-weight:700; letter-spacing:.3px; }
+        .navbar .user-info { display:flex; align-items:center; gap:16px; }
+        .btn-logout { padding:10px 16px; border:2px solid #fff; color:#fff; border-radius:8px; text-decoration:none; font-weight:600; }
+        .btn-logout:hover { background:#fff; color:#e74c3c; }
+        .container { padding:32px; max-width:1280px; margin:0 auto; }
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
+        .card { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); overflow:hidden; }
+        .card .hdr { padding:16px 20px; color:#fff; background:linear-gradient(135deg,#c0392b,#e74c3c); font-weight:700; }
+        .stat { padding:18px; }
+        .stat h3 { font-size:12px; color:#6c757d; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+        .stat .num { font-size:28px; font-weight:700; color:#2c3e50; }
+        .actions { display:flex; gap:12px; margin:18px 0 26px; }
+        .btn { padding:10px 16px; border:none; border-radius:8px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+        .btn-primary { background:#34495e; color:#fff; }
+        .btn-primary:hover { background:#2c3e50; }
+        .btn-sso { background:#16a085; color:#fff; }
+        .btn-sso:hover { background:#13856e; }
+        .table-wrap { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+        table { width:100%; border-collapse:collapse; }
+        th, td { padding:14px 16px; border-bottom:1px solid #eef0f3; text-align:left; }
+        th { background:#f8f9fa; color:#2c3e50; font-weight:700; font-size:13px; }
+        tr:hover { background:#fafcff; }
+        .role-badge { display:inline-block; padding:4px 10px; border-radius:4px; font-size:12px; font-weight:700; }
+        .rb-superadmin { background:#e74c3c; color:#fff; }
+        .rb-admin { background:#34495e; color:#fff; }
+        .rb-enduser { background:#16a085; color:#fff; }
+        .btn-sm { padding:6px 12px; border:none; border-radius:6px; font-weight:700; cursor:pointer; }
+        .btn-edit { background:#f39c12; color:#fff; }
+        .btn-edit:hover { background:#d68910; }
+        .btn-delete { background:#e74c3c; color:#fff; }
+        .btn-delete:hover { background:#c0392b; }
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+        .modal.active { display:flex; }
+        .modal-content { background:#fff; border-radius:12px; width:92%; max-width:520px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.2); }
+        .modal h3 { margin-bottom:16px; }
+        .form-group { margin-bottom:14px; }
+        .form-group label { font-size:13px; font-weight:700; margin-bottom:6px; display:block; color:#2c3e50; }
+        .form-group input, .form-group select { width:100%; padding:10px; border:2px solid #e6e8eb; border-radius:8px; font-size:14px; }
+        .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+        .btn-cancel { background:#95a5a6; color:#fff; }
+        .btn-save { background:#34495e; color:#fff; }
     </style>
 </head>
 <body>
 <div class="navbar">
-    <h1>👑 Super Admin Dashboard</h1>
+    <h1>Super Admin Dashboard</h1>
     <div class="user-info">
         <span th:text="'Welcome, ' + ${currentUser.username} + ' (Super Admin)'"></span>
         <a href="/logout" class="btn-logout">Logout</a>
@@ -321,267 +66,223 @@
 </div>
 
 <div class="container">
-    <div class="stats-grid">
-        <div class="stat-card">
+    <div class="stats">
+        <div class="card stat">
             <h3>Total Users</h3>
-            <div class="number" th:text="${users.size()}"></div>
+            <div class="num" th:text="${users.size()}">0</div>
         </div>
-        <div class="stat-card">
+        <div class="card stat">
             <h3>Admins</h3>
-            <div class="number" th:text="${adminCount}"></div>
+            <div class="num" th:text="${adminCount}">0</div>
         </div>
-        <div class="stat-card">
+        <div class="card stat">
             <h3>End Users</h3>
-            <div class="number" th:text="${userCount}"></div>
+            <div class="num" th:text="${userCount}">0</div>
+        </div>
+        <div class="card stat">
+            <h3>Super Admins</h3>
+            <div class="num" th:text="${superAdminCount}">0</div>
         </div>
     </div>
 
     <div class="actions">
-        <button class="btn btn-primary" onclick="openCreateModal()">➕ Create New User</button>
-        <a href="/superadmin/sso-config" class="btn btn-sso">⚙️ Configure SSO Settings</a>
+        <button class="btn btn-primary" id="btn-open-create">Create User</button>
+        <a href="/superadmin/sso-config" class="btn btn-sso">Configure SSO Settings</a>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h2>All System Users</h2>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Created By</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="user : ${users}">
-                    <td th:text="${user.id}"></td>
-                    <td th:text="${user.username}"></td>
-                    <td th:text="${user.email}"></td>
-                    <td>
-                        <span class="role-badge"
-                              th:classappend="${user.role == 'SUPERADMIN' ? 'superadmin' : (user.role == 'ADMIN' ? 'admin' : 'enduser')}"
-                              th:text="${user.role}"></span>
-                    </td>
-                    <td th:text="${user.createdBy}"></td>
-                    <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
-                    <td>
-                        <button class="btn btn-sm btn-edit" th:onclick="'editUser(' + ${user.id} + ')'">Edit</button>
-                        <button class="btn btn-sm btn-delete"
-                                th:if="${user.username != 'superadmin'}"
-                                th:onclick="'deleteUser(' + ${user.id} + ')'">Delete</button>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="table-wrap">
+        <div class="hdr">All Users</div>
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Created By</th><th>Created At</th><th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${users}">
+                <td th:text="${user.id}">1</td>
+                <td th:text="${user.username}">jdoe</td>
+                <td th:text="${user.email}">jdoe@acme.com</td>
+                <td>
+              <span th:class="'role-badge ' + (${user.role}=='SUPERADMIN' ? 'rb-superadmin' : (${user.role}=='ADMIN' ? 'rb-admin' : 'rb-enduser'))"
+                    th:text="${user.role}">ENDUSER</span>
+                </td>
+                <td th:text="${user.createdBy}">SYSTEM</td>
+                <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}">2025-01-01</td>
+                <td>
+                    <button class="btn-sm btn-edit"
+                            th:attr="data-id=${user.id},data-username=${user.username},data-email=${user.email},data-role=${user.role}"
+                            onclick="openEdit(this)">Edit</button>
+                    <button class="btn-sm btn-delete" th:if="${user.username != 'superadmin'}"
+                            th:attr="data-id=${user.id},data-username=${user.username}"
+                            onclick="handleDelete(this)">Delete</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Create User Modal -->
+<!-- Create Modal -->
 <div id="createModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>Create New User</h3>
-        </div>
+        <h3>Create User</h3>
         <form id="createForm">
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" id="createUsername" required>
+                <input id="c-username" type="text" required />
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="createEmail" required>
+                <input id="c-email" type="email" required />
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="createPassword" required>
+                <input id="c-password" type="password" required />
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <select id="createRole" required>
-                    <option value="ADMIN">Admin</option>
-                    <option value="ENDUSER">End User</option>
+                <select id="c-role" required>
+                    <option value="SUPERADMIN">SUPERADMIN</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="ENDUSER">ENDUSER</option>
                 </select>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeCreateModal()">Cancel</button>
-                <button type="submit" class="btn btn-save">Create User</button>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeCreate()">Cancel</button>
+                <button type="submit" class="btn btn-save">Create</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit User Modal -->
+<!-- Edit Modal -->
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit User</h3>
-        </div>
+        <h3>Edit User</h3>
         <form id="editForm">
-            <input type="hidden" id="editUserId">
+            <input type="hidden" id="e-id" />
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" id="editUsername" required>
+                <input id="e-username" type="text" required />
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" id="editEmail" required>
+                <input id="e-email" type="email" required />
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <select id="editRole" required>
-                    <option value="SUPERADMIN">Super Admin</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="ENDUSER">End User</option>
+                <select id="e-role" required>
+                    <option value="SUPERADMIN">SUPERADMIN</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="ENDUSER">ENDUSER</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>New Password (leave blank to keep current)</label>
-                <input type="password" id="editPassword">
+                <label>New Password (blank to keep)</label>
+                <input id="e-password" type="password" />
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn btn-save">Save Changes</button>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeEdit()">Cancel</button>
+                <button type="submit" class="btn btn-save">Save</button>
             </div>
         </form>
     </div>
 </div>
 
 <script th:inline="javascript">
-    const users = /*[[${users}]]*/ [];
+    const CSRF_TOKEN = /*[[${_csrf.token}]]*/ '';
+    const CSRF_HEADER = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
 
-    function openCreateModal() {
-        document.getElementById('createModal').classList.add('active');
-    }
+    const setCsrf = (headers = {}) => {
+      headers[CSRF_HEADER] = CSRF_TOKEN;
+      return headers;
+    };
 
-    function closeCreateModal() {
-        document.getElementById('createModal').classList.remove('active');
-        document.getElementById('createForm').reset();
-    }
-
-    function editUser(id) {
-        const user = users.find(u => u.id === id);
-        if (!user) return;
-
-        document.getElementById('editUserId').value = user.id;
-        document.getElementById('editUsername').value = user.username;
-        document.getElementById('editEmail').value = user.email;
-        document.getElementById('editRole').value = user.role;
-        document.getElementById('editPassword').value = '';
-
-        document.getElementById('editModal').classList.add('active');
-    }
-
-    function closeModal() {
-        document.getElementById('editModal').classList.remove('active');
-    }
+    document.getElementById('btn-open-create').addEventListener('click', () => {
+      document.getElementById('createModal').classList.add('active');
+    });
+    const closeCreate = () => {
+      const f = document.getElementById('createForm');
+      f.reset();
+      document.getElementById('createModal').classList.remove('active');
+    };
 
     document.getElementById('createForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const userData = {
-            username: document.getElementById('createUsername').value,
-            email: document.getElementById('createEmail').value,
-            password: document.getElementById('createPassword').value,
-            role: document.getElementById('createRole').value
-        };
-
-        try {
-            const response = await fetch('/superadmin/user/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-
-            const result = await response.text();
-
-            if (result === 'success') {
-                alert('User created successfully!');
-                window.location.reload();
-            } else {
-                alert('Error: ' + result);
-            }
-        } catch (error) {
-            alert('Error creating user: ' + error);
-        }
+      e.preventDefault();
+      const payload = {
+        username: document.getElementById('c-username').value,
+        email: document.getElementById('c-email').value,
+        password: document.getElementById('c-password').value,
+        role: document.getElementById('c-role').value
+      };
+      const res = await fetch('/superadmin/user/create', {
+        method: 'POST',
+        headers: setCsrf({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.status === 'success') {
+        window.location.reload();
+      } else {
+        alert(json.message || 'Create failed');
+      }
     });
+
+    const openEdit = (btn) => {
+      document.getElementById('e-id').value = btn.dataset.id;
+      document.getElementById('e-username').value = btn.dataset.username;
+      document.getElementById('e-email').value = btn.dataset.email;
+      document.getElementById('e-role').value = btn.dataset.role;
+      document.getElementById('e-password').value = '';
+      document.getElementById('editModal').classList.add('active');
+    };
+    const closeEdit = () => {
+      document.getElementById('editForm').reset();
+      document.getElementById('editModal').classList.remove('active');
+    };
 
     document.getElementById('editForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const id = document.getElementById('editUserId').value;
-        const userData = {
-            username: document.getElementById('editUsername').value,
-            email: document.getElementById('editEmail').value,
-            role: document.getElementById('editRole').value,
-            password: document.getElementById('editPassword').value
-        };
-
-        try {
-            const response = await fetch(`/superadmin/user/update/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-
-            const result = await response.text();
-
-            if (result === 'success') {
-                alert('User updated successfully!');
-                window.location.reload();
-            } else {
-                alert('Error: ' + result);
-            }
-        } catch (error) {
-            alert('Error updating user: ' + error);
-        }
+      e.preventDefault();
+      const id = document.getElementById('e-id').value;
+      const payload = {
+        username: document.getElementById('e-username').value,
+        email: document.getElementById('e-email').value,
+        role: document.getElementById('e-role').value,
+        password: document.getElementById('e-password').value
+      };
+      const res = await fetch(`/superadmin/user/update/${id}`, {
+        method: 'POST', // controller supports POST alias
+        headers: setCsrf({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.status === 'success') {
+        window.location.reload();
+      } else {
+        alert(json.message || 'Update failed');
+      }
     });
 
-    async function deleteUser(id) {
-        if (!confirm('Are you sure you want to delete this user?')) {
-            return;
-        }
+    const handleDelete = async (btn) => {
+      const id = btn.dataset.id;
+      const username = btn.dataset.username;
+      if (!confirm(`Delete user ${username}?`)) return;
+      const res = await fetch(`/superadmin/user/delete/${id}`, {
+        method: 'POST', // controller supports POST alias
+        headers: setCsrf()
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.status === 'success') {
+        window.location.reload();
+      } else {
+        alert(json.message || 'Delete failed');
+      }
+    };
 
-        try {
-            const response = await fetch(`/superadmin/user/delete/${id}`, {
-                method: 'POST'
-            });
-
-            const result = await response.text();
-
-            if (result === 'success') {
-                alert('User deleted successfully!');
-                window.location.reload();
-            } else {
-                alert('Error: ' + result);
-            }
-        } catch (error) {
-            alert('Error deleting user: ' + error);
-        }
-    }
-
-    // Modal close on background click
-    document.getElementById('createModal').addEventListener('click', (e) => {
-        if (e.target.id === 'createModal') {
-            closeCreateModal();
-        }
-    });
-
-    document.getElementById('editModal').addEventListener('click', (e) => {
-        if (e.target.id === 'editModal') {
-            closeModal();
-        }
-    });
+    // backdrop close
+    document.getElementById('createModal').addEventListener('click', (e) => { if (e.target.id === 'createModal') closeCreate(); });
+    document.getElementById('editModal').addEventListener('click', (e) => { if (e.target.id === 'editModal') closeEdit(); });
 </script>
 </body>
 </html>
