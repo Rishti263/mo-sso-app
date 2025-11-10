@@ -1,0 +1,99 @@
+<!-- FILE: src/main/resources/templates/home.html -->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tenant SaaS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #764ba2;
+        }
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .info li {
+            padding: 5px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Welcome to Multi-Tenant SaaS</h1>
+    <p>A secure, subdomain-based multi-tenancy application with SSO support</p>
+
+    <a href="/login" class="btn">Login</a>
+    <a href="/signup" class="btn">Sign Up</a>
+
+    <div class="info">
+        <h3>Quick Start:</h3>
+        <ul>
+            <li>🔐 <strong>Superadmin:</strong> superadmin.localhost:8080</li>
+            <li>👤 <strong>Demo Tenant:</strong> demo.localhost:8080</li>
+            <li>🆕 <strong>New Tenant:</strong> Sign up at superadmin domain</li>
+        </ul>
+    </div>
+
+    <div class="info" style="margin-top: 20px;">
+        <h3>Default Credentials:</h3>
+        <ul>
+            <li><strong>Superadmin:</strong> superadmin / admin123</li>
+            <li><strong>Demo Admin:</strong> demoadmin / demo123</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

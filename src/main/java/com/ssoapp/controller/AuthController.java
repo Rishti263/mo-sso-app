@@ -1,176 +1,120 @@
 package com.ssoapp.controller;
 
-import com.ssoapp.entity.User;
+import com.ssoapp.config.JwtUtil;
+import com.ssoapp.config.TenantContext;
+import com.ssoapp.model.User;
+import com.ssoapp.security.CustomUserDetails;
+import com.ssoapp.service.CustomUserDetailsService;
 import com.ssoapp.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
+    private final AuthenticationManager authenticationManager;
+    private final CustomUserDetailsService userDetailsService;
+    private final JwtUtil jwtUtil;
     private final UserService userService;
 
-    @GetMapping("/")
-    public String index(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user != null) {
-            return getRedirectByRole(user.getRole());
-        }
-        return "redirect:/login";
-    }
-
-    @GetMapping("/login")
-    public String loginPage(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user != null) {
-            return getRedirectByRole(user.getRole());
-        }
-        return "login";
-    }
-
-    @PostMapping("/api/auth/login")
-    public void apiLogin(@RequestParam String username,
-                         @RequestParam String password,
-                         HttpServletRequest request,
-                         HttpServletResponse response) throws Exception {
-
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpSession session) {
         try {
-            Optional<User> userOpt = userService.findByUsername(username);
-            if (!userOpt.isPresent()) {
-                response.sendRedirect("/login?error=user_not_found");
-                return;
-            }
+            Long organizationId = TenantContext.getOrganizationId();
+            log.info("Login attempt for user: {} with organizationId: {}", request.getUsername(), organizationId);
 
-            User user = userOpt.get();
+            // Authenticate the user
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
 
-            // Validate password
-            if (!userService.validatePassword(password, user.getPassword())) {
-                response.sendRedirect("/login?error=invalid_credentials");
-                return;
-            }
+            // IMPORTANT: Set the authentication in SecurityContext
+            SecurityContext securityContext = SecurityContextHolder.getContext();
+            securityContext.setAuthentication(authentication);
 
-            // Create new session
-            HttpSession session = request.getSession(true);
+            // Save the SecurityContext in the session
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
 
-            // Prepare Spring Security role
-            String role = user.getRole() != null ? user.getRole().trim().toUpperCase() : "ENDUSER";
-            String springRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
 
-            // Create authentication token
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            user.getUsername(),
-                            null,
-                            Collections.singletonList(new SimpleGrantedAuthority(springRole))
-                    );
+            // Generate JWT token (for API calls)
+            String token = jwtUtil.generateToken(userDetails, customUserDetails.getOrganizationId());
 
-            // Set security context
-            SecurityContext ctx = SecurityContextHolder.createEmptyContext();
-            ctx.setAuthentication(authentication);
-            SecurityContextHolder.setContext(ctx);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("username", userDetails.getUsername());
+            response.put("role", customUserDetails.getAuthorities().iterator().next().getAuthority());
+            response.put("organizationId", customUserDetails.getOrganizationId());
 
-            // Save security context to session
-            new HttpSessionSecurityContextRepository().saveContext(ctx, request, response);
+            log.info("Login successful for user: {} with role: {}", request.getUsername(),
+                    customUserDetails.getAuthorities().iterator().next().getAuthority());
 
-            // Store user in session
-            session.setAttribute("user", user);
-
-            // Redirect based on role
-            response.sendRedirect(getRedirectPath(user.getRole()));
-
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect("/login?error=auth_failed");
+            log.error("Login failed for user: {}", request.getUsername(), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
         }
     }
 
-    @GetMapping("/register")
-    public String registerPage(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user != null) return "redirect:/";
-        return "register";
-    }
-
-    @PostMapping("/register")
-    public String register(@RequestParam String username,
-                           @RequestParam String password,
-                           @RequestParam String email,
-                           @RequestParam String role,
-                           Model model) {
-
+    @PostMapping("/signup")
+    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
         try {
-            if (userService.existsByUsername(username)) {
-                model.addAttribute("error", "Username already exists.");
-                return "register";
-            }
-            if (userService.existsByEmail(email)) {
-                model.addAttribute("error", "Email already registered.");
-                return "register";
-            }
+            Long organizationId = TenantContext.getOrganizationId();
+            log.info("Signup attempt with organizationId: {}", organizationId);
 
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(password); // UserService will encode
-            user.setEmail(email);
-            user.setRole(role);         // SUPERADMIN, ADMIN or ENDUSER
+            User user = userService.createUser(
+                    request.getUsername(),
+                    request.getPassword(),
+                    request.getEmail(),
+                    request.getOrganizationName(),
+                    request.getSubdomain()
+            );
 
-            userService.registerUser(user);
-            model.addAttribute("success", "Registration successful. Please login.");
-            return "login";
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "User created successfully");
+            response.put("username", user.getUsername());
+            response.put("role", user.getRole());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            model.addAttribute("error", "Registration failed: " + e.getMessage());
-            return "register";
+            log.error("Signup failed", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        SecurityContextHolder.clearContext();
-        return "redirect:/login?logout=true";
+    @Data
+    static class LoginRequest {
+        private String username;
+        private String password;
     }
 
-    private String getRedirectByRole(String role) {
-        if (role == null) return "redirect:/login";
-
-        switch (role.toUpperCase()) {
-            case "SUPERADMIN":
-                return "redirect:/superadmin/dashboard";
-            case "ADMIN":
-                return "redirect:/admin/dashboard";
-            case "ENDUSER":
-                return "redirect:/user/dashboard";
-            default:
-                return "redirect:/login";
-        }
-    }
-
-    private String getRedirectPath(String role) {
-        if (role == null) return "/login";
-
-        switch (role.toUpperCase()) {
-            case "SUPERADMIN":
-                return "/superadmin/dashboard";
-            case "ADMIN":
-                return "/admin/dashboard";
-            case "ENDUSER":
-                return "/user/dashboard";
-            default:
-                return "/login";
-        }
+    @Data
+    static class SignupRequest {
+        private String username;
+        private String password;
+        private String email;
+        private String organizationName;
+        private String subdomain;
     }
 }

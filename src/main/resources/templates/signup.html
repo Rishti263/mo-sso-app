@@ -1,10 +1,10 @@
-<!-- FILE: src/main/resources/templates/login.html -->
+<!-- FILE: src/main/resources/templates/signup.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Sign Up</title>
     <style>
         * {
             margin: 0;
@@ -18,13 +18,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
-        .login-container {
+        .signup-container {
             background: white;
             padding: 40px;
             border-radius: 10px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 400px;
+            width: 450px;
         }
         h2 {
             color: #667eea;
@@ -91,59 +92,88 @@
         }
         .tenant-info {
             background: #f8f9fa;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
             text-align: center;
             color: #666;
         }
+        .org-fields {
+            display: none;
+        }
     </style>
 </head>
 <body>
-<div class="login-container">
-    <h2>Login</h2>
+<div class="signup-container">
+    <h2>Sign Up</h2>
 
-    <div class="tenant-info" id="tenantInfo">Loading tenant info...</div>
+    <div class="tenant-info" id="tenantInfo">Loading...</div>
 
     <div class="error" id="errorMessage"></div>
     <div class="success" id="successMessage"></div>
 
-    <form id="loginForm">
+    <form id="signupForm">
         <div class="form-group">
-            <label for="username">Username</label>
+            <label for="username">Username *</label>
             <input type="text" id="username" name="username" required>
         </div>
 
         <div class="form-group">
-            <label for="password">Password</label>
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password *</label>
             <input type="password" id="password" name="password" required>
         </div>
 
-        <button type="submit" class="btn">Login</button>
+        <div class="org-fields" id="orgFields">
+            <div class="form-group">
+                <label for="organizationName">Organization Name *</label>
+                <input type="text" id="organizationName" name="organizationName">
+            </div>
+
+            <div class="form-group">
+                <label for="subdomain">Subdomain *</label>
+                <input type="text" id="subdomain" name="subdomain" placeholder="e.g., acme">
+                <small style="color: #666;">Your organization will be accessible at: subdomain.localhost</small>
+            </div>
+        </div>
+
+        <button type="submit" class="btn">Sign Up</button>
     </form>
 
     <div class="links">
-        <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+        <p>Already have an account? <a href="/login">Login</a></p>
         <p><a href="/">Back to Home</a></p>
     </div>
 </div>
 
 <script>
+    let isSuperadmin = false;
+
     // Load tenant info
     fetch('/api/tenant/info')
         .then(response => response.json())
         .then(data => {
+            isSuperadmin = data.isSuperadmin;
             const tenantInfo = document.getElementById('tenantInfo');
+            const orgFields = document.getElementById('orgFields');
+
             if (data.isSuperadmin) {
-                tenantInfo.textContent = '🔐 Superadmin Login';
+                tenantInfo.innerHTML = '<strong>🔐 Superadmin Signup</strong><br>Create a new organization and admin account';
+                orgFields.style.display = 'block';
+                document.getElementById('organizationName').required = true;
+                document.getElementById('subdomain').required = true;
             } else if (data.organizationName) {
-                tenantInfo.textContent = `🏢 ${data.organizationName} (${data.subdomain})`;
+                tenantInfo.innerHTML = `<strong>🏢 ${data.organizationName}</strong><br>Create a new user account`;
             } else {
                 tenantInfo.textContent = '⚠️ Tenant not found';
             }
         });
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const errorDiv = document.getElementById('errorMessage');
@@ -153,11 +183,14 @@
 
         const formData = {
             username: document.getElementById('username').value,
-            password: document.getElementById('password').value
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            organizationName: isSuperadmin ? document.getElementById('organizationName').value : null,
+            subdomain: isSuperadmin ? document.getElementById('subdomain').value : null
         };
 
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -168,21 +201,18 @@
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem('token', data.token);
-                successDiv.textContent = 'Login successful! Redirecting...';
+                successDiv.textContent = 'Signup successful! Redirecting to login...';
                 successDiv.style.display = 'block';
 
                 setTimeout(() => {
-                    if (data.role === 'ROLE_SUPER_ADMIN') {
-                        window.location.href = '/superadmin/dashboard';
-                    } else if (data.role === 'ROLE_ADMIN') {
-                        window.location.href = '/admin/dashboard';
+                    if (isSuperadmin && formData.subdomain) {
+                        window.location.href = `http://${formData.subdomain}.localhost:8080/login`;
                     } else {
-                        window.location.href = '/admin/dashboard';
+                        window.location.href = '/login';
                     }
-                }, 1000);
+                }, 2000);
             } else {
-                errorDiv.textContent = data.error || 'Login failed';
+                errorDiv.textContent = data.error || 'Signup failed';
                 errorDiv.style.display = 'block';
             }
         } catch (error) {

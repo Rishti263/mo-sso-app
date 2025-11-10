@@ -1,10 +1,12 @@
 package com.ssoapp.controller;
 
-import com.ssoapp.config.TenantContext;
+import com.ssoapp.model.Organization;
 import com.ssoapp.model.User;
+import com.ssoapp.repository.OrganizationRepository;
 import com.ssoapp.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,31 +16,30 @@ import java.util.Collections;
 import java.util.List;
 
 @Controller
-@RequestMapping("/admin")
+@RequestMapping("/superadmin")
 @RequiredArgsConstructor
-public class AdminController {
+public class SuperadminController {
 
+    private final OrganizationRepository organizationRepository;
     private final AdminService adminService;
 
     @GetMapping("/dashboard")
-    public String adminDashboard(Model model, Authentication auth) {
+    public String superadminDashboard(Model model, Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) {
             return "redirect:/login";
         }
 
-        Long organizationId = TenantContext.getOrganizationId();
         String username = extractUsername(auth);
 
-        // Fetch users for this organization
-        List<User> users = organizationId != null
-                ? adminService.getAllUsersForOrganization(organizationId)
-                : Collections.emptyList();
+        // Fetch real data
+        List<Organization> organizations = organizationRepository.findAll();
+        List<User> superadmins = adminService.getAllSuperadminUsers();
 
         model.addAttribute("username", username);
-        model.addAttribute("users", users);
-        model.addAttribute("organizationId", organizationId);
+        model.addAttribute("organizations", organizations != null ? organizations : Collections.emptyList());
+        model.addAttribute("superadmins", superadmins != null ? superadmins : Collections.emptyList());
 
-        return "admin-dashboard";
+        return "superadmin-dashboard";
     }
 
     private String extractUsername(Authentication auth) {
